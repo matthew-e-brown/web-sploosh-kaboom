@@ -7,42 +7,12 @@ import init, {
     calculate_probabilities_from_game_history,
     disambiguate_board,
 } from './wasm/sploosh_wasm.js';
+import Tile from './components/Tile';
 import { dbRead, dbWrite, dbCachedFetch } from './database';
-import interpolate from 'color-interpolate';
 
 const VERSION_STRING = 'v0.0.22';
 
-// .        . . . .
-// 0123456789abcdef
-const colormap = interpolate(['#004', '#070', '#090', '#0b0', '#0d0', '#0f0', '#6f6']);
 const naturalsUpTo = (n) => [...Array(n).keys()];
-
-class Tile extends React.Component {
-    render() {
-        const isBest = this.props.best !== null && this.props.best[0] === this.props.x && this.props.best[1] === this.props.y;
-        let className = 'boardTile' + (this.props.valid ? '' : ' invalid')
-            + (isBest ? ' selected' : '');
-
-        let backgroundColor = this.props.backgroundColor;
-        if (backgroundColor === undefined) {
-            backgroundColor = this.props.text === null ? colormap(this.props.prob) : (
-                this.props.text === 'HIT' ? '#a2a' : '#44a'
-            );
-        }
-
-        return <div className={ className }
-            key={this.props.x + ',' + this.props.y}
-            style={{
-                fontSize: this.props.fontSize,
-                opacity: this.props.opacity,
-                backgroundColor,
-            }}
-            onClick={this.props.onClick}
-        >
-            {this.props.text === null ? (this.props.prob * 100).toFixed(this.props.precision) + '%' : this.props.text}
-        </div>;
-    }
-}
 
 let wasm = init(process.env.PUBLIC_URL + "/sploosh_wasm_bg.wasm");
 
