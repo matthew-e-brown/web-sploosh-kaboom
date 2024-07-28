@@ -7,62 +7,21 @@ import init, {
     calculate_probabilities_from_game_history,
     disambiguate_board,
 } from './wasm/sploosh_wasm.js';
+import Database from './database';
 const interpolate = require('color-interpolate');
 
 const VERSION_STRING = 'v0.0.22';
 
-var globalDB = null;
-const indexedDBreq = window.indexedDB.open('splooshkaboom', 1);
-indexedDBreq.onerror = function(event) {
-    alert('Could not access IndexedDB. This is usually due to using Private ' +
-          'Browsing in Firefox. The application should still work, but the ' +
-          'tables for Sequence-Aware Mode cannot be saved and must be ' +
-          'redownloaded every time you initialize it.');
-};
-// Known issue: There's basically a race condition here in that I don't
-// wait for this onsuccess to potentially start calling dbRead.
-indexedDBreq.onsuccess = function(event) {
-    globalDB = event.target.result;
-    globalDB.onerror = function(event) {
-        alert('IndexedDB error: ' + event.target.errorCode);
-    };
-};
-indexedDBreq.onupgradeneeded = function(event) {
-    const db = event.target.result;
-    db.createObjectStore('sk');
+const globalDB = Database.open();
+
+async function dbWrite(key, value) {
+    const db = await globalDB;
+    return await db.write(key, value);
 }
 
-// TODO: Am I using IndexedDB even remotely correctly!? This looks so weird...
-// Do I not have to somehow end or commit the transactions!?
-
-function dbWrite(key, value) {
-    if (globalDB === null)
-        return;
-
-    const transaction = globalDB.transaction(['sk'], 'readwrite');
-
-    transaction.onerror = function(event) {
-        alert('Transaction error!');
-    }
-    transaction.objectStore('sk').add(value, key);
-}
-
-function dbRead(key) {
-    return new Promise((resolve, reject) => {
-        const transaction = globalDB.transaction(['sk']);
-
-        transaction.onerror = function(event) {
-            alert('Transaction error!');
-        }
-        const objectStore = transaction.objectStore('sk');
-        const request = objectStore.get(key);
-        request.onsuccess = function(event) {
-            resolve(event.target.result);
-        };
-        request.onerror = function(event) {
-            reject();
-        };
-    });
+async function dbRead(key) {
+    const db = await globalDB;
+    return await db.read(key);
 }
 
 // .        . . . .
@@ -666,7 +625,7 @@ class MainMap extends React.Component {
         if (savedSettings === null) {
             savedSettings = defaultConfigurationParams;
         } else {
-            // if saved configuration from previous version, use defaults for 
+            // if saved configuration from previous version, use defaults for
             // any new parameters
             savedSettings = JSON.parse(savedSettings);
             for (const name of Object.keys(defaultConfigurationParams)) {
