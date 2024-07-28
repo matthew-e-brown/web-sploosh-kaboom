@@ -19,14 +19,16 @@ function dbOpen(version = 1) {
             }
 
             db.onerror = (ev) => {
-                window.alert(`Uncaught IndexedDB error: ${ev.target.errorCode}`);
-                throw ev; // this throw occurs later, e.g. when doing transactions
+                // This handler will run later, e.g. when doing transactions
+                const msg = `Uncaught IndexedDB error: ${ev.target.errorCode}`;
+                window.alert(msg);
+                throw new Error(msg);
             };
 
             db.onclose = (ev) => {
                 // https://developer.mozilla.org/en-US/docs/Web/API/IDBDatabase/close_event
                 window.alert(`IndexedDB closed. Restart the tab to re-initialize.`);
-                throw ev;
+                throw new Error("IndexedDB closed.");
             }
 
             resolve(db);
@@ -127,4 +129,24 @@ export async function dbWrite(key, value) {
         transaction.onerror = () => reject(transaction.error);
         transaction.oncomplete = () => resolve();
     });
+}
+
+
+/**
+ *
+ * @param {string} url The URL to fetch to.
+ * @param {(buf: ArrayBuffer) => void} callback A function to run when the
+ * request is complete.
+ */
+export async function dbCachedFetch(url, callback) {
+    let result = await dbRead(url);
+
+    if (result === undefined) {
+        const res = await fetch(process.env.PUBLIC_URL + url);
+        const buf = await res.arrayBuffer();
+        dbWrite(url, buf);
+        result = buf;
+    }
+
+    callback(result);
 }

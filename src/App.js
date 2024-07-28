@@ -7,7 +7,7 @@ import init, {
     calculate_probabilities_from_game_history,
     disambiguate_board,
 } from './wasm/sploosh_wasm.js';
-import { dbRead, dbWrite } from './database';
+import { dbRead, dbWrite, dbCachedFetch } from './database';
 import interpolate from 'color-interpolate';
 
 const VERSION_STRING = 'v0.0.22';
@@ -48,30 +48,6 @@ let wasm = init(process.env.PUBLIC_URL + "/sploosh_wasm_bg.wasm");
 
 // Super ugly, please forgive me. :(
 var globalMap = null;
-
-async function dbCachedFetch(url, callback) {
-    function cacheMiss() {
-        const req = new XMLHttpRequest();
-        req.open('GET', process.env.PUBLIC_URL + url, true);
-        req.responseType = 'arraybuffer';
-        req.onload = (evt) => {
-            dbWrite(url, req.response);
-            callback(req.response);
-        };
-        req.send();
-        return null;
-    }
-    const result = await dbRead(url).catch(cacheMiss);
-    if (result === undefined) {
-        cacheMiss();
-        return;
-    }
-    // This is sort of an ugly protocol, but if we hit the catch path above
-    // we signal that the callback was already called by returning null.
-    if (result === null)
-        return;
-    callback(result);
-}
 
 async function makeBoardIndicesTable() {
     function cacheMiss() {
