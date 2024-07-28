@@ -7,7 +7,7 @@ const colorMap = interpolate(['#004', '#070', '#090', '#0b0', '#0d0', '#0f0', '#
 
 /**
  * TODO: Add prop descriptions.
- * @typedef TileProps
+ * @typedef Props
  * @property {number} x
  * @property {number} y
  * @property {string} [backgroundColor]
@@ -22,14 +22,14 @@ const colorMap = interpolate(['#004', '#070', '#090', '#0b0', '#0d0', '#0f0', '#
  */
 
 /**
- * @extends {React.Component<TileProps>}
+ * @extends {React.Component<Props>}
  */
 export default class Tile extends React.Component {
     render() {
         const { x, y, best, valid, prob, fontSize, opacity, onClick } = this.props;
 
         const isBest = best !== null && best[0] === x && best[1] === y;
-        const className = 'boardTile' + (valid ? '' : 'invalid') + (isBest ? ' selected' : '');
+        const className = 'boardTile' + (valid ? '' : ' invalid') + (isBest ? ' selected' : '');
 
         let { backgroundColor, text } = this.props;
 
