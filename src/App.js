@@ -8,11 +8,16 @@ import init, {
     disambiguate_board,
 } from './wasm/sploosh_wasm.js';
 import Tile from './components/Tile';
+import LayoutDrawingBoard from './components/LayoutDrawingBoard';
+import naturalsUpTo from './naturalsUpTo.js';
 import { dbRead, dbWrite, dbCachedFetch } from './database';
 
-const VERSION_STRING = 'v0.0.22';
+/**
+ * @template T
+ * @typedef {{[key: `${number},${number}`]: T}} Grid
+ */
 
-const naturalsUpTo = (n) => [...Array(n).keys()];
+const VERSION_STRING = 'v0.0.22';
 
 let wasm = init(process.env.PUBLIC_URL + "/sploosh_wasm_bg.wasm");
 
@@ -26,6 +31,7 @@ async function makeBoardIndicesTable() {
         return result;
     }
     const result = await dbRead('boardIndicesTable').catch(cacheMiss);
+    console.log(result);
     if (result === undefined)
         return cacheMiss();
     return result;
@@ -261,113 +267,6 @@ function generateLayout() {
     return layout;
 }
 
-class LayoutDrawingBoard extends React.Component {
-    constructor() {
-        super();
-        this.state = { grid: this.makeEmptyGrid(), selectedCell: null };
-    }
-
-    makeEmptyGrid() {
-        const grid = [];
-        for (let y = 0; y < 8; y++)
-            for (let x = 0; x < 8; x++)
-                grid[[x, y]] = '.';
-        return grid;
-    }
-
-    clearBoard() {
-        this.setState({ grid: this.makeEmptyGrid(), selectedCell: null });
-    }
-
-    onClick(x, y) {
-        if (this.state.selectedCell === null) {
-            this.setState({ selectedCell: [x, y] });
-            return;
-        }
-        const grid = {...this.state.grid};
-        let changeMade = false;
-        for (const length of [2, 3, 4]) {
-            for (const [dx, dy] of [[+1, 0], [0, +1], [-1, 0], [0, -1]]) {
-                if (this.state.selectedCell[0] === x + dx * (length - 1) && this.state.selectedCell[1] === y + dy * (length - 1)) {
-                    // If this squid appears anywhere else, obliterate it.
-                    for (let y = 0; y < 8; y++)
-                        for (let x = 0; x < 8; x++)
-                            if (grid[[x, y]] === '' + length)
-                                grid[[x, y]] = '.';
-                    // Fill in the squid here.
-                    for (let i = 0; i < length; i++)
-                        grid[[x + i * dx, y + i * dy]] = '' + length;
-                    changeMade = true;
-                }
-            }
-        }
-        // If any squid has the wrong count, then totally eliminate it.
-        const countsBySquid = {2: 0, 3: 0, 4: 0, '.': 0};
-        for (let y = 0; y < 8; y++)
-            for (let x = 0; x < 8; x++)
-                countsBySquid[grid[[x, y]]]++;
-        for (const length of [2, 3, 4])
-            if (countsBySquid[length] !== length)
-                for (let y = 0; y < 8; y++)
-                    for (let x = 0; x < 8; x++)
-                        if (grid[[x, y]] === '' + length)
-                            grid[[x, y]] = '.';
-        if (changeMade)
-            this.setState({ grid });
-        this.setState({ selectedCell: null });
-    }
-
-    getLayoutString() {
-        // Quadratic time, but who cares?
-        let layoutString = '';
-        for (let y = 0; y < 8; y++)
-            for (let x = 0; x < 8; x++)
-                layoutString += this.state.grid[[x, y]];
-        return layoutString;
-    }
-
-    setStateFromLayoutString(layoutString) {
-        const grid = [];
-        for (let y = 0; y < 8; y++)
-            for (let x = 0; x < 8; x++)
-                grid[[x, y]] = layoutString[x + 8 * y];
-        this.setState({grid});
-    }
-
-    render() {
-        const layoutString = this.getLayoutString();
-        let boardIndex = this.props.parent.boardIndices[layoutString];
-        if (boardIndex === undefined) {
-            boardIndex = "waiting...";
-        }
-        const isSelectedCell = (x, y) => this.state.selectedCell !== null && x === this.state.selectedCell[0] && y === this.state.selectedCell[1];
-
-        return <div className='historyBoardContainer'>
-            <div className='historyBoard'>
-                {naturalsUpTo(8).map(
-                    (y) => <div key={y} style={{
-                        display: 'flex',
-                    }}>
-                        {naturalsUpTo(8).map(
-                            (x) => <Tile
-                                key={x + ',' + y}
-                                x={x} y={y}
-                                onClick={() => this.onClick(x, y)}
-                                text={this.state.grid[[x, y]]}
-                                valid={true}
-                                best={this.state.selectedCell}
-                                fontSize={'200%'}
-                                opacity={isSelectedCell(x, y) || this.state.grid[[x, y]] !== '.' ? 0.6 : 0.2}
-                                backgroundColor={this.state.grid[[x, y]] === '.' ? undefined : 'green'}
-                            />
-                        )}
-                    </div>
-                )}
-            </div><br/>
-            Squid Layout: {boardIndex}
-        </div>;
-    }
-}
 
 function renderYesNo(bool) {
     return bool ?
@@ -1153,7 +1052,7 @@ class MainMap extends React.Component {
             {this.state.sequenceAware === true && <>
                 <div>
                     {this.layoutDrawingBoardRefs.map((ref, i) =>
-                        <LayoutDrawingBoard parent={this} ref={ref} key={i}/>
+                        <LayoutDrawingBoard boardIndices={this.boardIndices} ref={ref} key={i}/>
                     )}
                 </div>
                 <hr/>
