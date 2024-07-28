@@ -1,21 +1,11 @@
 import React from 'react';
-import naturalsUpTo from '../naturalsUpTo';
 import Tile from './Tile';
+import { naturalsUpTo, makeGrid } from '../helpers';
+
 
 /**
- * @typedef {import('../App').Grid<'2' | '3' | '4' | '.'>} LayoutGrid
+ * @typedef {import('../helpers').Grid<'2' | '3' | '4' | '.'>} LayoutGrid
  */
-
-/**
- * @returns {LayoutGrid}
- */
-function makeEmptyGrid() {
-    const grid = [];
-    for (let y = 0; y < 8; y++)
-        for (let x = 0; x < 8; x++)
-            grid[[x, y]] = '.';
-    return grid;
-}
 
 /**
  * @typedef Props
@@ -34,13 +24,13 @@ function makeEmptyGrid() {
  */
 export default class LayoutDrawingBoard extends React.Component {
     state = {
-        grid: makeEmptyGrid(),
+        grid: makeGrid('.'),
         selectedCell: null,
     };
 
     clearBoard() {
         this.setState({
-            grid: makeEmptyGrid(),
+            grid: makeGrid('.'),
             selectedCell: null,
         });
     }

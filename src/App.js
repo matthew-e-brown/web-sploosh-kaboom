@@ -9,13 +9,8 @@ import init, {
 } from './wasm/sploosh_wasm.js';
 import Tile from './components/Tile';
 import LayoutDrawingBoard from './components/LayoutDrawingBoard';
-import naturalsUpTo from './naturalsUpTo.js';
+import { naturalsUpTo } from './helpers.js';
 import { dbRead, dbWrite, dbCachedFetch } from './database';
-
-/**
- * @template T
- * @typedef {{[key: `${number},${number}`]: T}} Grid
- */
 
 const VERSION_STRING = 'v0.0.22';
 
