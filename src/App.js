@@ -7,22 +7,10 @@ import init, {
     calculate_probabilities_from_game_history,
     disambiguate_board,
 } from './wasm/sploosh_wasm.js';
-import Database from './database';
-const interpolate = require('color-interpolate');
+import { dbRead, dbWrite } from './database';
+import interpolate from 'color-interpolate';
 
 const VERSION_STRING = 'v0.0.22';
-
-const globalDB = Database.open();
-
-async function dbWrite(key, value) {
-    const db = await globalDB;
-    return await db.write(key, value);
-}
-
-async function dbRead(key) {
-    const db = await globalDB;
-    return await db.read(key);
-}
 
 // .        . . . .
 // 0123456789abcdef
